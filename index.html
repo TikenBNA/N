@@ -52,10 +52,12 @@ footer{padding:20px 0 40px;color:var(--muted);font-size:11px}
 <div class="toolbar"><input id="search" class="field" placeholder="Поиск в Wikimedia Commons (например, nude art, sculpture)"><button id="searchBtn" class="primary">Найти</button></div>
 <div class="filters">
 <button id="allBtn">Все</button><button id="favBtn">♥ Избранное</button>
+<select id="licenseFilter" class="field" style="width:auto"><option value="all">Любая лицензия</option><option value="open">Только открытая лицензия</option><option value="unknown">Лицензия не указана</option></select>
 <select id="sort" class="field" style="width:auto"><option value="relevance">По релевантности</option><option value="title">По названию</option></select>
 <button id="refreshBtn">↻ Обновить</button>
 </div>
 <div id="status" class="status">Введите запрос или выберите предложенную тему.</div>
+<details class="notice" open><summary><b>Другие фотоплощадки — 10 источников</b></summary><p class="muted">Откройте поиск на выбранной площадке. Это внешние поисковые ссылки, не единая выдача: API и ключи этих сервисов ещё не подключены.</p><div id="sourceLinks" class="toolbar"></div></details>
 <div id="results" class="grid"></div>
 <button id="moreBtn" class="hidden" style="width:100%;margin-top:12px">Загрузить ещё</button>
 </div>
@@ -73,5 +75,5 @@ footer{padding:20px 0 40px;color:var(--muted);font-size:11px}
 </div>
 <footer>Каталог не является подтверждением возраста, согласия или прав на изображение. Проверяйте условия конкретной лицензии перед повторным использованием.</footer>
 </main>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=7"></script>
 </body></html>
