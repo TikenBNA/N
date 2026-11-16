@@ -7,9 +7,11 @@ function clean(s=''){return String(s).replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,
 function setStatus(s){$('status').textContent=s;}
 function persistFavs(){localStorage.setItem('ng-favs',JSON.stringify([...state.favorites]));}
 function licenseAllowed(item){
- const name=String(item.license||'').toLowerCase();
+ const name=String(item.license||'').toLowerCase().replace(/[ _]+/g,'-');
  const url=String(item.licenseUrl||'').toLowerCase();
- return /cc0|cc-by(?:-sa)?(?:-|$)|creative commons.*attribution|public domain|общественное достояние|free art license/.test(name)||/creativecommons.org\/licenses\/(by|by-sa)\//.test(url)||/creativecommons.org\/publicdomain\/(zero|mark)\//.test(url);
+ const ccUrl=/creativecommons\\.org\\/(licenses\\/(by|by-sa|by-nc|by-nc-sa|by-nd|by-nc-nd)\\/|publicdomain\\/(zero|mark)\\/)/.test(url);
+ const named=/\\bcc0\\b|\\bpublic-domain\\b|общественное-достояние|\\b(attribution|cc-by)(-sa|-nc|-nd|-nc-sa|-nc-nd)?(-|\\s|$)/.test(name);
+ return ccUrl||named;
 }
 const externalSources=[
  {name:'Flickr',url:'https://www.flickr.com/search/?text='},{name:'DeviantArt',url:'https://www.deviantart.com/search?q='},{name:'Pixelfed',url:'https://pixelfed.social/explore/tags/'},{name:'Mastodon',url:'https://mastodon.social/tags/'},{name:'Imgur',url:'https://imgur.com/search?q='},{name:'Tumblr',url:'https://www.tumblr.com/search/'},{name:'Reddit',url:'https://www.reddit.com/search/?q='},{name:'Internet Archive',url:'https://archive.org/search?query='},{name:'Unsplash',url:'https://unsplash.com/s/photos/'},{name:'Pexels',url:'https://www.pexels.com/search/'}
@@ -48,7 +50,7 @@ async function search(reset=true){
    if(seen.has(item.id))continue;
    const key=(item.artist||'').toLowerCase().trim();
    const count=artistCounts.get(key)||0;
-   if(key && count>=4)continue;
+   if(key && count>=1)continue;
    diversified.push(item);
    if(key)artistCounts.set(key,count+1);
   }
@@ -69,7 +71,7 @@ function renderPublic(){
   const key=(item.artist||'').toLowerCase().replace(/\s+/g,' ').trim();
   if(!key||key==='не указан')return true;
   const count=artistCounts.get(key)||0;
-  if(count>=3)return false;
+  if(count>=1)return false;
   artistCounts.set(key,count+1);
   return true;
  });
