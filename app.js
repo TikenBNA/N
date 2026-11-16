@@ -44,7 +44,7 @@ async function search(reset=true){
    if(seen.has(item.id))continue;
    const key=(item.artist||'').toLowerCase().trim();
    const count=artistCounts.get(key)||0;
-   if(key && count>=2)continue;
+   if(key && count>=4)continue;
    diversified.push(item);
    if(key)artistCounts.set(key,count+1);
   }
@@ -62,7 +62,7 @@ function renderPublic(){
   const key=(item.artist||'').toLowerCase().replace(/\s+/g,' ').trim();
   if(!key||key==='не указан')return true;
   const count=artistCounts.get(key)||0;
-  if(count>=1)return false;
+  if(count>=3)return false;
   artistCounts.set(key,count+1);
   return true;
  });
