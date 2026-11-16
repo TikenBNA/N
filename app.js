@@ -31,7 +31,24 @@ async function search(reset=true){
    if(!ii?.thumburl||!ii?.descriptionurl||!licenseAllowed(m))return null;
    return {id:p.pageid,title:p.title.replace(/^File:/,''),thumb:ii.thumburl,original:ii.url,source:ii.descriptionurl,license:clean(m.LicenseShortName?.value),licenseUrl:m.LicenseUrl?.value||ii.descriptionurl,artist:clean(m.Artist?.value||'Не указан'),category:classify(m,p.title)};
   }).filter(Boolean);
-  const seen=new Set(state.items.map(x=>x.id));state.items.push(...found.filter(x=>!seen.has(x.id)));state.offset+=30;
+  const seen=new Set(state.items.map(x=>x.id));
+  // Limit repeated uploads from the same credited artist so one photo session
+  // cannot dominate the whole result grid.
+  const artistCounts=new Map();
+  for(const item of state.items){
+   const key=(item.artist||'').toLowerCase().trim();
+   artistCounts.set(key,(artistCounts.get(key)||0)+1);
+  }
+  const diversified=[];
+  for(const item of found){
+   if(seen.has(item.id))continue;
+   const key=(item.artist||'').toLowerCase().trim();
+   const count=artistCounts.get(key)||0;
+   if(key && count>=2)continue;
+   diversified.push(item);
+   if(key)artistCounts.set(key,count+1);
+  }
+  state.items.push(...diversified);state.offset+=30;
   renderPublic();
   setStatus(state.items.length?`Загружено ${state.items.length}. Показаны только файлы с распознанной открытой лицензией.`:'Ничего не найдено. Попробуйте другой запрос.');
  }catch(e){setStatus('Не удалось получить данные Wikimedia Commons. Проверьте соединение и повторите попытку.');}
