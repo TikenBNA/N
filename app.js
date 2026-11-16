@@ -56,6 +56,16 @@ async function search(reset=true){
 }
 function renderPublic(){
  let arr=state.showFav?state.items.filter(x=>state.favorites.has(String(x.id))):[...state.items];
+ // Enforce variety at render time too, including results loaded before an update.
+ const artistCounts=new Map();
+ arr=arr.filter(item=>{
+  const key=(item.artist||'').toLowerCase().replace(/\\s+/g,' ').trim();
+  if(!key||key==='не указан')return true;
+  const count=artistCounts.get(key)||0;
+  if(count>=1)return false;
+  artistCounts.set(key,count+1);
+  return true;
+ });
  if($('sort').value==='title')arr.sort((a,b)=>a.title.localeCompare(b.title));
  $('results').innerHTML=arr.map(x=>`<article class="card"><button class="heart" data-heart="${x.id}" aria-label="Избранное">${state.favorites.has(String(x.id))?'♥':'♡'}</button><img loading="lazy" src="${esc(x.thumb)}" alt="Миниатюра из Wikimedia Commons" data-view="${x.id}"><div class="info"><div class="title">${esc(x.title)}</div><span class="badge">${esc(x.category)}</span><span class="badge">${esc(x.license)}</span><div class="muted">Автор: ${esc(x.artist)}</div><button data-view="${x.id}" style="margin-top:7px;width:100%">Подробнее</button></div></article>`).join('');
 }
