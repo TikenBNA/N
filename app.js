@@ -1,14 +1,80 @@
 'use strict';
-const $=id=>document.getElementById(id);let items=[],offset=0,favs=new Set(JSON.parse(localStorage.getItem('ng-favs')||'[]')),onlyFav=false,local=[];
-$('age').addEventListener('change',()=> $('enter').disabled=!$('age').checked);
-$('enter').onclick=()=>{if(!$('age').checked)return;$('gate').hidden=true;$('app').hidden=false;search(true)};
-document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('active',x===b));$('art').hidden=b.dataset.tab!=='art';$('private').hidden=b.dataset.tab!=='private'});
-function safe(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-async function search(reset=true){if(reset){items=[];offset=0;onlyFav=false}$('status').textContent='Загружаю результаты…';$('more').disabled=true;let q=$('query').value.trim()||'artistic nude sculpture';let p=new URLSearchParams({action:'query',generator:'search',gsrsearch:q+' filetype:bitmap',gsrnamespace:'6',gsrlimit:'30',gsroffset:String(offset),prop:'imageinfo',iiprop:'url|extmetadata',iiurlwidth:'640',format:'json',origin:'*'});try{let r=await fetch('https://commons.wikimedia.org/w/api.php?'+p);if(!r.ok)throw Error(r.status);let d=await r.json();let found=Object.values(d.query?.pages||{}).map(x=>{let i=x.imageinfo?.[0],m=i?.extmetadata||{};let lic=m.LicenseShortName?.value||'',lu=m.LicenseUrl?.value||'';if(!i?.thumburl||!i?.descriptionurl||!lic)return null;return{id:x.pageid,title:x.title.replace(/^File:/,''),thumb:i.thumburl,original:i.url,source:i.descriptionurl,license:lic,artist:m.Artist?.value||'Не указан'}}).filter(Boolean);let seen=new Set(items.map(x=>x.id));items.push(...found.filter(x=>!seen.has(x.id)));offset+=30;render();$('status').textContent='Найдено материалов с указанными лицензиями: '+items.length;$('more').hidden=!d.continue;$('more').disabled=false}catch(e){$('status').textContent='Не удалось получить данные. Проверьте интернет и повторите поиск.';$('more').disabled=false}}
-function render(){let a=onlyFav?items.filter(x=>favs.has(String(x.id))):[...items];if($('sort').value==='title')a.sort((x,y)=>x.title.localeCompare(y.title));$('results').innerHTML=a.map(x=>'<article class="card"><img loading="lazy" src="'+safe(x.thumb)+'" alt=""><div class="info"><b>'+safe(x.title)+'</b><p>'+safe(x.license)+'</p><button data-fav="'+x.id+'">'+(favs.has(String(x.id))?'★':'☆')+'</button> <button data-view="'+x.id+'">Открыть</button></div></article>').join('');}
-$('search').onclick=()=>search();$('query').onkeydown=e=>{if(e.key==='Enter')search()};$('more').onclick=()=>search(false);$('sort').onchange=render;$('all').onclick=()=>{onlyFav=false;render()};$('favs').onclick=()=>{onlyFav=true;render()};
-$('results').onclick=e=>{let f=e.target.dataset.fav,v=e.target.dataset.view;if(f){favs.has(f)?favs.delete(f):favs.add(f);localStorage.setItem('ng-favs',JSON.stringify([...favs]));render()}if(v){let x=items.find(z=>String(z.id)===v);$('vtitle').textContent=x.title;$('vimg').src=x.original;$('vmeta').textContent='Автор: '+x.artist+' · Лицензия: '+x.license;$('vsource').href=x.source;$('viewer').hidden=false}};
-$('close').onclick=()=>{$('viewer').hidden=true;$('vimg').src=''};$('viewer').onclick=e=>{if(e.target===$('viewer'))$('close').click()};
-$('files').onchange=e=>{for(let f of e.target.files){let url=URL.createObjectURL(f);local.push({name:f.name,url});}renderLocal();e.target.value=''};
-function renderLocal(){$('local').innerHTML=local.map(x=>'<article class="card"><img src="'+x.url+'" alt=""><div class="info">'+safe(x.name)+'</div></article>').join('')}
-if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+const $=id=>document.getElementById(id);
+const state={section:'art',items:[],offset:0,query:'',favorites:new Set(JSON.parse(localStorage.getItem('ng-favs')||'[]')),privateFiles:[],privateFavs:new Set(),showFav:false,loading:false};
+const api='https://commons.wikimedia.org/w/api.php';
+function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function clean(s=''){return String(s).replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim();}
+function setStatus(s){$('status').textContent=s;}
+function persistFavs(){localStorage.setItem('ng-favs',JSON.stringify([...state.favorites]));}
+function licenseAllowed(meta){
+ const name=clean(meta.LicenseShortName?.value||'');
+ const url=meta.LicenseUrl?.value||'';
+ return !!name && (/creative commons|public domain|free art license/i.test(name)||/creativecommons\.org|publicdomain/i.test(url));
+}
+function classify(meta,title){
+ const text=(title+' '+clean(meta.ImageDescription?.value||'')+' '+clean(meta.Categories?.value||'')).toLowerCase();
+ if(/sculpture|statue|painting|drawing|classical|renaissance|museum|antique|ancient/.test(text))return 'Искусство';
+ if(/photograph|photography|model|studio/.test(text))return 'Фотография';
+ return 'Ню / искусство';
+}
+async function search(reset=true){
+ if(state.loading)return;
+ if(reset){state.items=[];state.offset=0;state.query=$('search').value.trim();state.showFav=false;}
+ state.loading=true;$('moreBtn').disabled=true;setStatus('Загружаю и проверяю метаданные лицензии…');
+ const q=state.query||'artistic nude photography';
+ const params=new URLSearchParams({action:'query',generator:'search',gsrsearch:q+' filetype:bitmap',gsrnamespace:'6',gsrlimit:'30',gsroffset:String(state.offset),prop:'imageinfo',iiprop:'url|extmetadata',iiurlwidth:'640',format:'json',origin:'*'});
+ try{
+  const r=await fetch(api+'?'+params);if(!r.ok)throw Error('HTTP '+r.status);
+  const data=await r.json();
+  const found=Object.values(data.query?.pages||{}).map(p=>{
+   const ii=p.imageinfo?.[0],m=ii?.extmetadata||{};
+   if(!ii?.thumburl||!ii?.descriptionurl||!licenseAllowed(m))return null;
+   return {id:p.pageid,title:p.title.replace(/^File:/,''),thumb:ii.thumburl,original:ii.url,source:ii.descriptionurl,license:clean(m.LicenseShortName?.value),licenseUrl:m.LicenseUrl?.value||ii.descriptionurl,artist:clean(m.Artist?.value||'Не указан'),category:classify(m,p.title)};
+  }).filter(Boolean);
+  const seen=new Set(state.items.map(x=>x.id));state.items.push(...found.filter(x=>!seen.has(x.id)));state.offset+=30;
+  renderPublic();
+  setStatus(state.items.length?`Загружено ${state.items.length}. Показаны только файлы с распознанной открытой лицензией.`:'Ничего не найдено. Попробуйте другой запрос.');
+ }catch(e){setStatus('Не удалось получить данные Wikimedia Commons. Проверьте соединение и повторите попытку.');}
+ finally{state.loading=false;$('moreBtn').disabled=false;$('moreBtn').classList.toggle('hidden',!state.items.length);}
+}
+function renderPublic(){
+ let arr=state.showFav?state.items.filter(x=>state.favorites.has(String(x.id))):[...state.items];
+ if($('sort').value==='title')arr.sort((a,b)=>a.title.localeCompare(b.title));
+ $('results').innerHTML=arr.map(x=>`<article class="card"><button class="heart" data-heart="${x.id}" aria-label="Избранное">${state.favorites.has(String(x.id))?'♥':'♡'}</button><img loading="lazy" src="${esc(x.thumb)}" alt="Миниатюра из Wikimedia Commons" data-view="${x.id}"><div class="info"><div class="title">${esc(x.title)}</div><span class="badge">${esc(x.category)}</span><span class="badge">${esc(x.license)}</span><div class="muted">Автор: ${esc(x.artist)}</div><button data-view="${x.id}" style="margin-top:7px;width:100%">Подробнее</button></div></article>`).join('');
+}
+function openViewer(x){
+ $('viewTitle').textContent=x.title;$('viewImage').src=x.original;$('viewMeta').textContent=`Автор: ${x.artist||'не указан'} · Лицензия: ${x.license||'неизвестна'}`;
+ $('sourceLink').href=x.source||'#';$('licenseLink').href=x.licenseUrl||x.source||'#';$('viewer').classList.remove('hidden');
+}
+function renderPrivate(){
+ const favOnly=state.privateFavOnly;
+ const files=state.privateFiles.filter(f=>!favOnly||state.privateFavs.has(f.id));
+ $('privateGrid').innerHTML=files.map(f=>`<article class="card"><button class="heart" data-pfav="${f.id}">${state.privateFavs.has(f.id)?'♥':'♡'}</button><img src="${f.url}" alt="Локальный файл"><div class="info"><div class="title">${esc(f.name)}</div><span class="badge">Локальный файл</span></div></article>`).join('');
+ $('privateStatus').textContent=`Файлов: ${state.privateFiles.length}. Хранятся только в памяти этой вкладки.`;
+}
+$('ageCheck').addEventListener('change',()=>{$('enter').disabled=!$('ageCheck').checked});
+$('enter').addEventListener('click',()=>{if(!$('ageCheck').checked)return;$('ageGate').classList.add('hidden');$('app').classList.remove('hidden');search();});
+document.querySelectorAll('[data-section]').forEach(b=>b.addEventListener('click',()=>{
+ state.section=b.dataset.section;document.querySelectorAll('[data-section]').forEach(x=>x.classList.toggle('active',x===b));
+ $('artPanel').classList.toggle('hidden',state.section!=='art');$('privatePanel').classList.toggle('hidden',state.section!=='private');
+}));
+$('searchBtn').addEventListener('click',()=>search());$('search').addEventListener('keydown',e=>{if(e.key==='Enter')search();});
+$('refreshBtn').addEventListener('click',()=>search());$('moreBtn').addEventListener('click',()=>search(false));
+$('sort').addEventListener('change',renderPublic);
+$('allBtn').addEventListener('click',()=>{state.showFav=false;renderPublic();setStatus('Все загруженные результаты');});
+$('favBtn').addEventListener('click',()=>{state.showFav=true;renderPublic();setStatus('Избранное');});
+$('results').addEventListener('click',e=>{
+ const h=e.target.closest('[data-heart]');if(h){const id=String(h.dataset.heart);state.favorites.has(id)?state.favorites.delete(id):state.favorites.add(id);persistFavs();renderPublic();return;}
+ const v=e.target.closest('[data-view]');if(v){const x=state.items.find(y=>String(y.id)===String(v.dataset.view));if(x)openViewer(x);}
+});
+$('closeViewer').addEventListener('click',()=>$('viewer').classList.add('hidden'));
+$('viewer').addEventListener('click',e=>{if(e.target===$('viewer'))$('viewer').classList.add('hidden');});
+$('localFiles').addEventListener('change',e=>{
+ const files=[...e.target.files].filter(f=>/^image\/(jpeg|png|webp)$/.test(f.type));
+ for(const f of files){state.privateFiles.push({id:crypto.randomUUID(),name:f.name,url:URL.createObjectURL(f)});}
+ renderPrivate();e.target.value='';
+});
+$('privateGrid').addEventListener('click',e=>{const b=e.target.closest('[data-pfav]');if(!b)return;const id=b.dataset.pfav;state.privateFavs.has(id)?state.privateFavs.delete(id):state.privateFavs.add(id);renderPrivate();});
+$('privateFav').addEventListener('click',()=>{state.privateFavOnly=!state.privateFavOnly;renderPrivate();});
+$('clearPrivate').addEventListener('click',()=>{state.privateFiles.forEach(f=>URL.revokeObjectURL(f.url));state.privateFiles=[];state.privateFavs.clear();state.privateFavOnly=false;renderPrivate();});
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
