@@ -68,7 +68,7 @@ function renderPublic(){
  let arr=state.showFav?state.items.filter(x=>state.favorites.has(String(x.id))):[...state.items];
  const licenseMode=$('licenseFilter')?.value||'all';
  if(licenseMode==='open')arr=arr.filter(licenseAllowed);
- if(licenseMode==='unknown')arr=arr.filter(x=>!x.license||/^не указана/i.test(x.license));
+ if(licenseMode==='unknown')arr=arr.filter(x=>!licenseAllowed(x));
  // Enforce variety at render time too, including results loaded before an update.
  const artistCounts=new Map();
  arr=arr.filter(item=>{
