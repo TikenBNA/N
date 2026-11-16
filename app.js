@@ -28,13 +28,16 @@ async function search(reset=true){
  const q=state.query||'artistic nude photography';
  const params=new URLSearchParams({action:'query',generator:'search',gsrsearch:q+' filetype:bitmap',gsrnamespace:'6',gsrlimit:'30',gsroffset:String(state.offset),prop:'imageinfo',iiprop:'url|extmetadata',iiurlwidth:'640',format:'json',origin:'*'});
  try{
-  const r=await fetch(api+'?'+params);if(!r.ok)throw Error('HTTP '+r.status);
-  const data=await r.json();
-  const found=Object.values(data.query?.pages||{}).map(p=>{
+  let found=[];
+  try{
+   const r=await fetch(api+'?'+params);if(!r.ok)throw Error('HTTP '+r.status);
+   const data=await r.json();
+   found=Object.values(data.query?.pages||{}).map(p=>{
    const ii=p.imageinfo?.[0],m=ii?.extmetadata||{};
    if(!ii?.thumburl||!ii?.descriptionurl)return null;
    return {id:p.pageid,title:p.title.replace(/^File:/,''),thumb:ii.thumburl,original:ii.url,source:ii.descriptionurl,license:clean(m.LicenseShortName?.value)||'Не указана — права не проверены',licenseUrl:m.LicenseUrl?.value||ii.descriptionurl,artist:clean(m.Artist?.value||'Не указан'),category:classify(m,p.title)};
-  }).filter(Boolean);
+   }).filter(Boolean);
+  }catch(err){setStatus('Wikimedia Commons недоступна; продолжаю поиск по другим площадкам.');}
   const seen=new Set(state.items.map(x=>x.id));
   // Limit repeated uploads from the same credited artist so one photo session
   // cannot dominate the whole result grid.
