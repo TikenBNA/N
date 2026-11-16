@@ -6,11 +6,15 @@ function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt
 function clean(s=''){return String(s).replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/\s+/g,' ').trim();}
 function setStatus(s){$('status').textContent=s;}
 function persistFavs(){localStorage.setItem('ng-favs',JSON.stringify([...state.favorites]));}
-function licenseAllowed(meta){
- const name=clean(meta.LicenseShortName?.value||'');
- const url=meta.LicenseUrl?.value||'';
- return !!name && (/creative commons|public domain|free art license/i.test(name)||/creativecommons\.org|publicdomain/i.test(url));
+function licenseAllowed(item){
+ const name=String(item.license||'').toLowerCase();
+ const url=String(item.licenseUrl||'').toLowerCase();
+ return /cc0|cc-by(?:-sa)?(?:-|$)|public domain|общественное достояние|free art license/.test(name)||/creativecommons.org\/licenses\/(by|by-sa)\//.test(url)||/creativecommons.org\/publicdomain\/(zero|mark)\//.test(url);
 }
+const externalSources=[
+ {name:'Flickr',url:'https://www.flickr.com/search/?text='},{name:'DeviantArt',url:'https://www.deviantart.com/search?q='},{name:'Pixelfed',url:'https://pixelfed.social/explore'},{name:'Mastodon',url:'https://mastodon.social/explore'},{name:'Imgur',url:'https://imgur.com/search?q='},{name:'Tumblr',url:'https://www.tumblr.com/search/'},{name:'Reddit',url:'https://www.reddit.com/search/?q='},{name:'Internet Archive',url:'https://archive.org/search?query='},{name:'Unsplash',url:'https://unsplash.com/s/photos/'},{name:'Pexels',url:'https://www.pexels.com/search/'}
+];
+function renderSources(){const q=encodeURIComponent($('search').value.trim()||'artistic nude');$('sourceLinks').innerHTML=externalSources.map(s=>`<a class="badge" href="${s.url}${q}" target="_blank" rel="noopener noreferrer">${s.name} ↗</a>`).join('');}
 function classify(meta,title){
  const text=(title+' '+clean(meta.ImageDescription?.value||'')+' '+clean(meta.Categories?.value||'')).toLowerCase();
  if(/sculpture|statue|painting|drawing|classical|renaissance|museum|antique|ancient/.test(text))return 'Искусство';
@@ -49,13 +53,16 @@ async function search(reset=true){
    if(key)artistCounts.set(key,count+1);
   }
   state.items.push(...diversified);state.offset+=30;
-  renderPublic();
-  setStatus(state.items.length?`Загружено ${state.items.length}. Лицензия не фильтрует выдачу; статус прав показан в карточке.`:'Изображения не найдены. Попробуйте другой запрос.');
+  renderSources();renderPublic();
+  setStatus(state.items.length?`Загружено ${state.items.length}. Фильтр лицензии применяется к карточкам.`:'Изображения не найдены. Попробуйте другой запрос.');
  }catch(e){setStatus('Не удалось получить данные Wikimedia Commons. Проверьте соединение и повторите попытку.');}
  finally{state.loading=false;$('moreBtn').disabled=false;$('moreBtn').classList.toggle('hidden',!state.items.length);}
 }
 function renderPublic(){
  let arr=state.showFav?state.items.filter(x=>state.favorites.has(String(x.id))):[...state.items];
+ const licenseMode=$('licenseFilter')?.value||'all';
+ if(licenseMode==='open')arr=arr.filter(licenseAllowed);
+ if(licenseMode==='unknown')arr=arr.filter(x=>!x.license||/^не указана/i.test(x.license));
  // Enforce variety at render time too, including results loaded before an update.
  const artistCounts=new Map();
  arr=arr.filter(item=>{
@@ -88,6 +95,8 @@ document.querySelectorAll('[data-section]').forEach(b=>b.addEventListener('click
 $('searchBtn').addEventListener('click',()=>search());$('search').addEventListener('keydown',e=>{if(e.key==='Enter')search();});
 $('refreshBtn').addEventListener('click',()=>search());$('moreBtn').addEventListener('click',()=>search(false));
 $('sort').addEventListener('change',renderPublic);
+$('licenseFilter').addEventListener('change',renderPublic);
+$('search').addEventListener('input',renderSources);
 $('allBtn').addEventListener('click',()=>{state.showFav=false;renderPublic();setStatus('Все загруженные результаты');});
 $('favBtn').addEventListener('click',()=>{state.showFav=true;renderPublic();setStatus('Избранное');});
 $('results').addEventListener('click',e=>{
@@ -104,4 +113,5 @@ $('localFiles').addEventListener('change',e=>{
 $('privateGrid').addEventListener('click',e=>{const b=e.target.closest('[data-pfav]');if(!b)return;const id=b.dataset.pfav;state.privateFavs.has(id)?state.privateFavs.delete(id):state.privateFavs.add(id);renderPrivate();});
 $('privateFav').addEventListener('click',()=>{state.privateFavOnly=!state.privateFavOnly;renderPrivate();});
 $('clearPrivate').addEventListener('click',()=>{state.privateFiles.forEach(f=>URL.revokeObjectURL(f.url));state.privateFiles=[];state.privateFavs.clear();state.privateFavOnly=false;renderPrivate();});
+renderSources();
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
