@@ -59,7 +59,7 @@ function renderPublic(){
  // Enforce variety at render time too, including results loaded before an update.
  const artistCounts=new Map();
  arr=arr.filter(item=>{
-  const key=(item.artist||'').toLowerCase().replace(/\\s+/g,' ').trim();
+  const key=(item.artist||'').toLowerCase().replace(/\s+/g,' ').trim();
   if(!key||key==='не указан')return true;
   const count=artistCounts.get(key)||0;
   if(count>=1)return false;
