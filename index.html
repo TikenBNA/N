@@ -57,7 +57,7 @@ footer{padding:20px 0 40px;color:var(--muted);font-size:11px}
 <button id="refreshBtn">↻ Обновить</button>
 </div>
 <div id="status" class="status">Введите запрос или выберите предложенную тему.</div>
-<details class="notice" open><summary><b>Другие фотоплощадки — 10 источников</b></summary><p class="muted">Откройте поиск на выбранной площадке. Это внешние поисковые ссылки, не единая выдача: API и ключи этих сервисов ещё не подключены.</p><div id="sourceLinks" class="toolbar"></div></details>
+<details class="notice" open><summary><b>10 подключаемых фотоплощадок · настройки API</b></summary><p>Ключи вводятся здесь и сохраняются только в локальном хранилище этого браузера. В GitHub они не записываются. Не вводите секреты OAuth/Client Secret — только публичные API keys или access tokens, выданные для клиентского приложения.</p><div class="toolbar"><input id="key-flickr" class="field" type="password" placeholder="Flickr API key"><input id="key-deviantartToken" class="field" type="password" placeholder="DeviantArt OAuth access token"><input id="key-imgur" class="field" type="password" placeholder="Imgur Client ID"><input id="key-tumblr" class="field" type="password" placeholder="Tumblr API key"><input id="key-redditToken" class="field" type="password" placeholder="Reddit OAuth access token"><input id="key-unsplash" class="field" type="password" placeholder="Unsplash Access Key"><input id="key-pexels" class="field" type="password" placeholder="Pexels API key"><input id="key-pixelfedHost" class="field" value="https://pixelfed.social" placeholder="Pixelfed instance URL"><input id="key-mastodonHost" class="field" value="https://mastodon.social" placeholder="Mastodon instance URL"></div><button id="saveKeys" class="primary" style="margin-top:8px">Сохранить настройки API</button><span id="keyStatus" class="muted">Ключи не настроены.</span><p class="muted">Internet Archive работает без ключа. Reddit и DeviantArt могут требовать одобренный доступ/токен; публичные ленты Pixelfed/Mastodon зависят от настроек сервера.</p></details>
 <div id="results" class="grid"></div>
 <button id="moreBtn" class="hidden" style="width:100%;margin-top:12px">Загрузить ещё</button>
 </div>
@@ -75,5 +75,6 @@ footer{padding:20px 0 40px;color:var(--muted);font-size:11px}
 </div>
 <footer>Каталог не является подтверждением возраста, согласия или прав на изображение. Проверяйте условия конкретной лицензии перед повторным использованием.</footer>
 </main>
-<script src="app.js?v=7"></script>
+<script src="sources.js?v=1</script>
+<script src="app.js?v=9"></script>
 </body></html>
