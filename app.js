@@ -54,9 +54,15 @@ async function search(reset=true){
    diversified.push(item);
    if(key)artistCounts.set(key,count+1);
   }
-  state.items.push(...diversified);state.offset+=30;
+  let external={items:[],statuses:[]};
+  if(reset&&window.NGExternal){external=await window.NGExternal.searchAll(q);}
+  const externalItems=external.items||[];
+  state.items.push(...diversified,...externalItems);
+  state.offset+=30;
   renderSources();renderPublic();
-  setStatus(state.items.length?`Загружено ${state.items.length}. Фильтр лицензии применяется к карточкам.`:'Изображения не найдены. Попробуйте другой запрос.');
+  const active=externalItems.length?` · внешние источники: ${externalItems.length}`:'';
+  const providerStatus=(external.statuses||[]).join(' | ');
+  setStatus((state.items.length?`Загружено ${state.items.length}${active}. Фильтр лицензии применяется к карточкам.`:'Изображения не найдены.')+(providerStatus?' Статус API: '+providerStatus:''));
  }catch(e){setStatus('Не удалось получить данные Wikimedia Commons. Проверьте соединение и повторите попытку.');}
  finally{state.loading=false;$('moreBtn').disabled=false;$('moreBtn').classList.toggle('hidden',!state.items.length);}
 }
@@ -76,7 +82,7 @@ function renderPublic(){
   return true;
  });
  if($('sort').value==='title')arr.sort((a,b)=>a.title.localeCompare(b.title));
- $('results').innerHTML=arr.map(x=>`<article class="card"><button class="heart" data-heart="${x.id}" aria-label="Избранное">${state.favorites.has(String(x.id))?'♥':'♡'}</button><img loading="lazy" src="${esc(x.thumb)}" alt="Миниатюра из Wikimedia Commons" data-view="${x.id}"><div class="info"><div class="title">${esc(x.title)}</div><span class="badge">${esc(x.category)}</span><span class="badge">${esc(x.license)}</span><div class="muted">Автор: ${esc(x.artist)}</div><button data-view="${x.id}" style="margin-top:7px;width:100%">Подробнее</button></div></article>`).join('');
+ $('results').innerHTML=arr.map(x=>`<article class="card"><button class="heart" data-heart="${x.id}" aria-label="Избранное">${state.favorites.has(String(x.id))?'♥':'♡'}</button><img loading="lazy" src="${esc(x.thumb)}" alt="Изображение из ${esc(x.sourceName||'Wikimedia Commons')}" data-view="${x.id}"><div class="info"><div class="title">${esc(x.title)}</div><span class="badge">${esc(x.category)}</span><span class="badge">${esc(x.license)}</span><div class="muted">Автор: ${esc(x.artist)}</div><button data-view="${x.id}" style="margin-top:7px;width:100%">Подробнее</button></div></article>`).join('');
 }
 function openViewer(x){
  $('viewTitle').textContent=x.title;$('viewImage').src=x.original;$('viewMeta').textContent=`Автор: ${x.artist||'не указан'} · Лицензия: ${x.license||'неизвестна'}`;
@@ -116,4 +122,5 @@ $('privateGrid').addEventListener('click',e=>{const b=e.target.closest('[data-pf
 $('privateFav').addEventListener('click',()=>{state.privateFavOnly=!state.privateFavOnly;renderPrivate();});
 $('clearPrivate').addEventListener('click',()=>{state.privateFiles.forEach(f=>URL.revokeObjectURL(f.url));state.privateFiles=[];state.privateFavs.clear();state.privateFavOnly=false;renderPrivate();});
 renderSources();
+if(window.NGExternal)window.NGExternal.initConfig();
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
