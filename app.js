@@ -9,10 +9,10 @@ function persistFavs(){localStorage.setItem('ng-favs',JSON.stringify([...state.f
 function licenseAllowed(item){
  const name=String(item.license||'').toLowerCase();
  const url=String(item.licenseUrl||'').toLowerCase();
- return /cc0|cc-by(?:-sa)?(?:-|$)|public domain|общественное достояние|free art license/.test(name)||/creativecommons.org\/licenses\/(by|by-sa)\//.test(url)||/creativecommons.org\/publicdomain\/(zero|mark)\//.test(url);
+ return /cc0|cc-by(?:-sa)?(?:-|$)|creative commons.*attribution|public domain|общественное достояние|free art license/.test(name)||/creativecommons.org\/licenses\/(by|by-sa)\//.test(url)||/creativecommons.org\/publicdomain\/(zero|mark)\//.test(url);
 }
 const externalSources=[
- {name:'Flickr',url:'https://www.flickr.com/search/?text='},{name:'DeviantArt',url:'https://www.deviantart.com/search?q='},{name:'Pixelfed',url:'https://pixelfed.social/explore'},{name:'Mastodon',url:'https://mastodon.social/explore'},{name:'Imgur',url:'https://imgur.com/search?q='},{name:'Tumblr',url:'https://www.tumblr.com/search/'},{name:'Reddit',url:'https://www.reddit.com/search/?q='},{name:'Internet Archive',url:'https://archive.org/search?query='},{name:'Unsplash',url:'https://unsplash.com/s/photos/'},{name:'Pexels',url:'https://www.pexels.com/search/'}
+ {name:'Flickr',url:'https://www.flickr.com/search/?text='},{name:'DeviantArt',url:'https://www.deviantart.com/search?q='},{name:'Pixelfed',url:'https://pixelfed.social/explore/tags/'},{name:'Mastodon',url:'https://mastodon.social/tags/'},{name:'Imgur',url:'https://imgur.com/search?q='},{name:'Tumblr',url:'https://www.tumblr.com/search/'},{name:'Reddit',url:'https://www.reddit.com/search/?q='},{name:'Internet Archive',url:'https://archive.org/search?query='},{name:'Unsplash',url:'https://unsplash.com/s/photos/'},{name:'Pexels',url:'https://www.pexels.com/search/'}
 ];
 function renderSources(){const q=encodeURIComponent($('search').value.trim()||'artistic nude');$('sourceLinks').innerHTML=externalSources.map(s=>`<a class="badge" href="${s.url}${q}" target="_blank" rel="noopener noreferrer">${s.name} ↗</a>`).join('');}
 function classify(meta,title){
