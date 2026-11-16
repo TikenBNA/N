@@ -20,7 +20,7 @@ function classify(meta,title){
 async function search(reset=true){
  if(state.loading)return;
  if(reset){state.items=[];state.offset=0;state.query=$('search').value.trim();state.showFav=false;}
- state.loading=true;$('moreBtn').disabled=true;setStatus('Загружаю и проверяю метаданные лицензии…');
+ state.loading=true;$('moreBtn').disabled=true;setStatus('Загружаю изображения и сведения об источнике…');
  const q=state.query||'artistic nude photography';
  const params=new URLSearchParams({action:'query',generator:'search',gsrsearch:q+' filetype:bitmap',gsrnamespace:'6',gsrlimit:'30',gsroffset:String(state.offset),prop:'imageinfo',iiprop:'url|extmetadata',iiurlwidth:'640',format:'json',origin:'*'});
  try{
@@ -28,8 +28,8 @@ async function search(reset=true){
   const data=await r.json();
   const found=Object.values(data.query?.pages||{}).map(p=>{
    const ii=p.imageinfo?.[0],m=ii?.extmetadata||{};
-   if(!ii?.thumburl||!ii?.descriptionurl||!licenseAllowed(m))return null;
-   return {id:p.pageid,title:p.title.replace(/^File:/,''),thumb:ii.thumburl,original:ii.url,source:ii.descriptionurl,license:clean(m.LicenseShortName?.value),licenseUrl:m.LicenseUrl?.value||ii.descriptionurl,artist:clean(m.Artist?.value||'Не указан'),category:classify(m,p.title)};
+   if(!ii?.thumburl||!ii?.descriptionurl)return null;
+   return {id:p.pageid,title:p.title.replace(/^File:/,''),thumb:ii.thumburl,original:ii.url,source:ii.descriptionurl,license:clean(m.LicenseShortName?.value)||'Не указана — права не проверены',licenseUrl:m.LicenseUrl?.value||ii.descriptionurl,artist:clean(m.Artist?.value||'Не указан'),category:classify(m,p.title)};
   }).filter(Boolean);
   const seen=new Set(state.items.map(x=>x.id));
   // Limit repeated uploads from the same credited artist so one photo session
@@ -50,7 +50,7 @@ async function search(reset=true){
   }
   state.items.push(...diversified);state.offset+=30;
   renderPublic();
-  setStatus(state.items.length?`Загружено ${state.items.length}. Показаны только файлы с распознанной открытой лицензией.`:'Ничего не найдено. Попробуйте другой запрос.');
+  setStatus(state.items.length?`Загружено ${state.items.length}. Лицензия не фильтрует выдачу; статус прав показан в карточке.`:'Изображения не найдены. Попробуйте другой запрос.');
  }catch(e){setStatus('Не удалось получить данные Wikimedia Commons. Проверьте соединение и повторите попытку.');}
  finally{state.loading=false;$('moreBtn').disabled=false;$('moreBtn').classList.toggle('hidden',!state.items.length);}
 }
