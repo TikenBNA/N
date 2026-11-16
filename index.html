@@ -1,11 +1,77 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#171717"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg"><title>Nude Gallery</title>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#171717">
+<meta name="description" content="Личная галерея фотографий с фильтрацией источников и лицензий">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Nude Gallery</title>
 <style>
-:root{color-scheme:dark;font:16px system-ui;background:#111;color:#f4f4f4}*{box-sizing:border-box}body{margin:0}header{position:sticky;top:0;background:#181818;padding:16px;border-bottom:1px solid #333;z-index:2}.wrap{max-width:1000px;margin:auto;padding:16px}h1{font-size:20px;margin:0}.muted{color:#aaa;font-size:13px}.tabs,.tools{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}button,input{font:inherit;border-radius:10px;padding:10px;background:#252525;color:white;border:1px solid #444}button{cursor:pointer}.active{border-color:#c7a5ff;background:#30263b}.primary{background:#c7a5ff;color:#171217;font-weight:700}.tools input{flex:1;min-width:180px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px}.card{background:#202020;border:1px solid #333;border-radius:12px;overflow:hidden}.card img{width:100%;height:190px;object-fit:cover}.info{padding:9px;font-size:12px}.notice{padding:12px;background:#202020;border:1px solid #333;border-radius:12px;margin:12px 0}a{color:#c7a5ff}#viewer{position:fixed;inset:0;background:#000e;z-index:5;display:grid;place-items:center;padding:16px}#viewer[hidden],section[hidden]{display:none}#viewer>div{max-width:700px;max-height:90vh;overflow:auto;background:#191919;padding:16px;border-radius:16px}#viewer img{max-width:100%;max-height:65vh;display:block;margin:12px auto}@media(min-width:700px){.grid{grid-template-columns:repeat(4,1fr)}}
-</style></head><body><header><div class="wrap"><h1>NUDE GALLERY</h1><div class="muted">Личная коллекция · 18+</div></div></header><main class="wrap">
-<div id="gate" class="notice"><b>Подтверждение возраста</b><p>Этот каталог предназначен исключительно для совершеннолетних. Используйте только изображения, которые вы вправе просматривать и хранить.</p><label><input type="checkbox" id="age"> Мне исполнилось 18 лет</label><p><button class="primary" id="enter" disabled>Продолжить</button></p></div>
-<div id="app" hidden><nav class="tabs"><button class="active" data-tab="art">Художественная ню</button><button data-tab="private">Личная коллекция</button></nav>
-<section id="art"><div class="tools"><input id="query" placeholder="Поиск в Wikimedia Commons"><button class="primary" id="search">Найти</button></div><div class="tools"><button id="all">Все</button><button id="favs">★ Избранное</button><select id="sort"><option value="relevance">По релевантности</option><option value="title">По названию</option></select></div><p class="muted" id="status">Поиск по открытым материалам Wikimedia Commons.</p><div class="grid" id="results"></div><button id="more" hidden>Загрузить ещё</button></section>
-<section id="private" hidden><div class="notice">Добавляйте только изображения совершеннолетних людей, полученные с их явного согласия. Файлы остаются в памяти этой вкладки и не отправляются на сервер.</div><input id="files" type="file" accept="image/jpeg,image/png,image/webp" multiple><div class="grid" id="local"></div></section></div></main>
-<div id="viewer" hidden><div><button id="close">Закрыть ✕</button><h3 id="vtitle"></h3><img id="vimg" alt=""><p id="vmeta" class="muted"></p><a id="vsource" target="_blank" rel="noopener">Страница источника</a></div></div>
-<script src="app.js"></script></body></html>
+:root{color-scheme:dark;--bg:#111;--panel:#1c1c1c;--line:#333;--text:#f4f4f4;--muted:#aaa;--accent:#c7a5ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif}
+button,input,select{font:inherit}button{cursor:pointer;border:1px solid var(--line);background:#252525;color:var(--text);border-radius:12px;padding:10px 13px}
+button.primary{background:var(--accent);color:#17121f;border-color:var(--accent);font-weight:700}
+button:disabled{opacity:.45;cursor:not-allowed}a{color:var(--accent)}
+header{position:sticky;top:0;z-index:5;background:#111e;backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding:14px max(16px,env(safe-area-inset-left))}
+.wrap{max-width:1050px;margin:auto;padding:16px}.brand{display:flex;align-items:center;justify-content:space-between;gap:10px}.brand h1{font-size:19px;margin:0;letter-spacing:.08em}.sub,.muted{color:var(--muted);font-size:12px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0}.tab.active{border-color:var(--accent);background:#30263b}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}.toolbar input{flex:1;min-width:150px}.field{width:100%;background:#202020;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.status{font-size:12px;color:var(--muted);padding:10px 0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.card{position:relative;border:1px solid var(--line);background:var(--panel);border-radius:14px;overflow:hidden;min-width:0}
+.card img{display:block;width:100%;height:210px;object-fit:cover;background:#292929}
+.card .info{padding:9px;font-size:12px;line-height:1.45;overflow-wrap:anywhere}
+.card .title{font-weight:650;margin-bottom:5px}
+.heart{position:absolute;right:8px;top:8px;border:0;border-radius:50%;background:#000b;padding:7px 10px}
+.badge{display:inline-block;border:1px solid var(--line);border-radius:30px;padding:3px 7px;color:var(--muted);font-size:10px;margin:3px 3px 0 0}
+.notice{background:#1c1c1c;border:1px solid var(--line);padding:13px;border-radius:13px;font-size:12px;line-height:1.55;margin:14px 0}
+.hidden{display:none!important}.modal{position:fixed;inset:0;background:#000d;z-index:10;display:grid;place-items:center;padding:16px}.modalbox{width:min(650px,100%);max-height:90dvh;overflow:auto;background:#191919;border:1px solid var(--line);border-radius:18px;padding:16px}
+.modalbox img{max-height:55dvh;width:100%;object-fit:contain;background:#080808;border-radius:10px}
+footer{padding:20px 0 40px;color:var(--muted);font-size:11px}
+@media(min-width:650px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}.card img{height:240px}}
+@media(min-width:900px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header><div class="brand wrap" style="padding:0"><div><h1>NUDE GALLERY</h1><div class="sub">Personal collection · 18+</div></div><span class="badge">PWA · v1.0</span></div></header>
+<main class="wrap">
+<section id="ageGate" class="notice">
+<h2 style="font-size:17px;margin:0 0 8px">Подтверждение возраста</h2>
+<p>Приложение предназначено только для совершеннолетних. Для публичных результатов используются открытые медиаматериалы с проверяемыми метаданными лицензии. Возраст и согласие изображённых людей не всегда можно независимо подтвердить по открытым метаданным.</p>
+<label style="display:flex;gap:9px;align-items:center;margin:12px 0"><input id="ageCheck" type="checkbox"> Мне исполнилось 18 лет</label>
+<button id="enter" class="primary" disabled>Войти в галерею</button>
+</section>
+<section id="app" class="hidden">
+<div class="tabs">
+<button class="tab active" data-section="art">Художественная ню</button>
+<button class="tab" data-section="private">Эротика · личная коллекция</button>
+</div>
+<div id="artPanel">
+<div class="toolbar"><input id="search" class="field" placeholder="Поиск в Wikimedia Commons (например, nude art, sculpture)"><button id="searchBtn" class="primary">Найти</button></div>
+<div class="filters">
+<button id="allBtn">Все</button><button id="favBtn">♥ Избранное</button>
+<select id="sort" class="field" style="width:auto"><option value="relevance">По релевантности</option><option value="title">По названию</option></select>
+<button id="refreshBtn">↻ Обновить</button>
+</div>
+<div id="status" class="status">Введите запрос или выберите предложенную тему.</div>
+<div id="results" class="grid"></div>
+<button id="moreBtn" class="hidden" style="width:100%;margin-top:12px">Загрузить ещё</button>
+</div>
+<div id="privatePanel" class="hidden">
+<div class="notice"><b>Личная коллекция для эротических материалов 18+</b><br>Автоматически собирать эротические изображения из открытого интернета небезопасно: лицензия сама по себе не подтверждает возраст модели, согласие на публикацию или право на распространение. Поэтому этот раздел не скачивает такие изображения с неизвестных сайтов. Добавляйте только собственные файлы либо материалы, для которых у вас есть явное подтверждение совершеннолетия, согласия и прав на использование.</div>
+<label class="sub" for="localFiles">Добавить разрешённые изображения с устройства</label>
+<input id="localFiles" class="field" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+<div class="filters"><button id="privateFav">♥ Избранное</button><button id="clearPrivate">Очистить список</button></div>
+<div id="privateStatus" class="status">Файлы остаются на устройстве и не отправляются на сервер.</div>
+<div id="privateGrid" class="grid"></div>
+</div>
+</section>
+<div id="viewer" class="modal hidden" role="dialog" aria-modal="true">
+<div class="modalbox"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b id="viewTitle">Фото</b><button id="closeViewer">Закрыть ✕</button></div><img id="viewImage" alt="Просмотр выбранного изображения"><p id="viewMeta" class="muted"></p><div class="toolbar"><a id="sourceLink" target="_blank" rel="noopener">Страница источника ↗</a><a id="licenseLink" target="_blank" rel="noopener">Лицензия ↗</a></div></div>
+</div>
+<footer>Каталог не является подтверждением возраста, согласия или прав на изображение. Проверяйте условия конкретной лицензии перед повторным использованием.</footer>
+</main>
+<script src="app.js"></script>
+</body></html>
