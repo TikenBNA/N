@@ -7,11 +7,9 @@ function clean(s=''){return String(s).replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,
 function setStatus(s){$('status').textContent=s;}
 function persistFavs(){localStorage.setItem('ng-favs',JSON.stringify([...state.favorites]));}
 function licenseAllowed(item){
- const name=String(item.license||'').toLowerCase().replace(/[ _]+/g,'-');
+ const name=String(item.license||'').toLowerCase();
  const url=String(item.licenseUrl||'').toLowerCase();
- const ccUrl=/creativecommons\\.org\\/(licenses\\/(by|by-sa|by-nc|by-nc-sa|by-nd|by-nc-nd)\\/|publicdomain\\/(zero|mark)\\/)/.test(url);
- const named=/\\bcc0\\b|\\bpublic-domain\\b|общественное-достояние|\\b(attribution|cc-by)(-sa|-nc|-nd|-nc-sa|-nc-nd)?(-|\\s|$)/.test(name);
- return ccUrl||named;
+ return name.includes('cc0')||name.includes('cc by')||name.includes('cc-by')||name.includes('public domain')||name.includes('общественное достояние')||url.includes('creativecommons.org/licenses/by')||url.includes('creativecommons.org/publicdomain/');
 }
 const externalSources=[
  {name:'Flickr',url:'https://www.flickr.com/search/?text='},{name:'DeviantArt',url:'https://www.deviantart.com/search?q='},{name:'Pixelfed',url:'https://pixelfed.social/explore/tags/'},{name:'Mastodon',url:'https://mastodon.social/tags/'},{name:'Imgur',url:'https://imgur.com/search?q='},{name:'Tumblr',url:'https://www.tumblr.com/search/'},{name:'Reddit',url:'https://www.reddit.com/search/?q='},{name:'Internet Archive',url:'https://archive.org/search?query='},{name:'Unsplash',url:'https://unsplash.com/s/photos/'},{name:'Pexels',url:'https://www.pexels.com/search/'}
